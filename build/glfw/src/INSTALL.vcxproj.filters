@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\admin\bul\graph-coloring\GraphColoring\build\CMakeFiles\36b1e458a54715c81cb9ec2785fada0b\INSTALL_force.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{A0963FE7-0E91-3CB2-8B9E-5569D38A195F}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

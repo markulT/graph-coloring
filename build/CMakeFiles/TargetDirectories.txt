@@ -1,0 +1,10 @@
+C:/Users/admin/bul/graph-coloring/GraphColoring/build/CMakeFiles/GraphColoring.dir
+C:/Users/admin/bul/graph-coloring/GraphColoring/build/CMakeFiles/INSTALL.dir
+C:/Users/admin/bul/graph-coloring/GraphColoring/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/admin/bul/graph-coloring/GraphColoring/build/CMakeFiles/ZERO_CHECK.dir
+C:/Users/admin/bul/graph-coloring/GraphColoring/build/glfw/CMakeFiles/uninstall.dir
+C:/Users/admin/bul/graph-coloring/GraphColoring/build/glfw/CMakeFiles/INSTALL.dir
+C:/Users/admin/bul/graph-coloring/GraphColoring/build/glfw/CMakeFiles/ALL_BUILD.dir
+C:/Users/admin/bul/graph-coloring/GraphColoring/build/glfw/src/CMakeFiles/glfw.dir
+C:/Users/admin/bul/graph-coloring/GraphColoring/build/glfw/src/CMakeFiles/update_mappings.dir
+C:/Users/admin/bul/graph-coloring/GraphColoring/build/glfw/src/CMakeFiles/INSTALL.dir

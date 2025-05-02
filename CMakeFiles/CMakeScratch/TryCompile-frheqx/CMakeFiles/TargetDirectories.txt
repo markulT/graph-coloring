@@ -1,0 +1,2 @@
+C:/Users/admin/bul/graph-coloring/GraphColoring/CMakeFiles/CMakeScratch/TryCompile-frheqx/CMakeFiles/cmTC_846a9.dir
+C:/Users/admin/bul/graph-coloring/GraphColoring/CMakeFiles/CMakeScratch/TryCompile-frheqx/CMakeFiles/ALL_BUILD.dir
