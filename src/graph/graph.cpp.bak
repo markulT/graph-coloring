@@ -4,6 +4,8 @@
 #include <random>
 #include <ctime>
 #include <iostream>
+#include <queue>
+#include <set>
 
 namespace graph_coloring {
 
@@ -112,7 +114,7 @@ void Graph::colorGraph(ColoringAlgorithm algorithm) {
     // Choose the algorithm based on the parameter
     switch (algorithm) {
         case ColoringAlgorithm::SF:
-            std::cout << "Using smallest-first algorithm for graph coloring" << std::endl;
+            std::cout << "Using SF (Saturation Largest First) algorithm for graph coloring" << std::endl;
             sfColoring();
             break;
         case ColoringAlgorithm::Exact:
@@ -159,31 +161,82 @@ void Graph::greedyColoring() {
     }
 }
 
+// SF (Saturation Largest First) coloring algorithm implementation
+// Also known as DSatur algorithm
 void Graph::sfColoring() {
-    // Smallest-First (SF) coloring algorithm
-    // First, compute the degree of each vertex
-    std::vector<std::pair<int, int>> vertexDegrees; // (vertex id, degree)
-    
-    for (const auto& vertex : vertices) {
-        int vertexId = vertex.getId();
-        std::vector<int> adjacentIds = getAdjacentVertexIds(vertexId);
-        vertexDegrees.push_back(std::make_pair(vertexId, adjacentIds.size()));
+    if (vertices.empty()) {
+        return;
     }
     
-    // Sort vertices by degree in non-increasing order (largest degree first)
-    std::sort(vertexDegrees.begin(), vertexDegrees.end(), 
-              [](const std::pair<int, int>& a, const std::pair<int, int>& b) {
-                  return a.second > b.second;
-              });
+    std::cout << "Starting SF (DSatur) algorithm..." << std::endl;
     
-    // Color the vertices in this order
-    for (const auto& vertexPair : vertexDegrees) {
-        int vertexId = vertexPair.first;
+    // Initialize colored status
+    std::vector<bool> colored(vertices.size(), false);
+    
+    // Initialize saturation degree - number of different colors adjacent to a vertex
+    std::vector<int> saturationDegree(vertices.size(), 0);
+    
+    // Initialize adjacent colors for each vertex
+    std::vector<std::set<int>> adjacentColors(vertices.size());
+    
+    // Find the vertex with highest degree (most adjacent vertices)
+    int maxDegreeVertex = 0;
+    int maxDegree = -1;
+    
+    for (size_t i = 0; i < vertices.size(); i++) {
+        int degree = getAdjacentVertexIds(vertices[i].getId()).size();
+        if (degree > maxDegree) {
+            maxDegree = degree;
+            maxDegreeVertex = i;
+        }
+    }
+    
+    // Color the vertex with highest degree with color 0
+    int firstVertexId = vertices[maxDegreeVertex].getId();
+    vertexColors[firstVertexId] = 0;
+    colored[maxDegreeVertex] = true;
+    
+    // Update saturation of adjacent vertices
+    std::vector<int> adjacentIds = getAdjacentVertexIds(firstVertexId);
+    for (int adjId : adjacentIds) {
+        // Find index of adjacent vertex
+        auto it = std::find_if(vertices.begin(), vertices.end(),
+            [adjId](const Vertex& v) { return v.getId() == adjId; });
         
-        // Get colors of adjacent vertices
-        std::vector<int> adjacentIds = getAdjacentVertexIds(vertexId);
+        if (it != vertices.end()) {
+            int idx = std::distance(vertices.begin(), it);
+            adjacentColors[idx].insert(0);
+            saturationDegree[idx]++;
+        }
+    }
+    
+    // Color remaining vertices
+    int remainingVertices = vertices.size() - 1;
+    while (remainingVertices > 0) {
+        // Find uncolored vertex with highest saturation degree
+        // If tie, choose the one with highest degree
+        int maxSatVertex = -1;
+        int maxSatDegree = -1;
+        int maxDegree = -1;
+        
+        for (size_t i = 0; i < vertices.size(); i++) {
+            if (!colored[i]) {
+                if (saturationDegree[i] > maxSatDegree || 
+                    (saturationDegree[i] == maxSatDegree && 
+                     getAdjacentVertexIds(vertices[i].getId()).size() > maxDegree)) {
+                    maxSatDegree = saturationDegree[i];
+                    maxDegree = getAdjacentVertexIds(vertices[i].getId()).size();
+                    maxSatVertex = i;
+                }
+            }
+        }
+        
+        // Find the smallest available color for this vertex
+        int vertexId = vertices[maxSatVertex].getId();
         std::vector<bool> usedColors(vertices.size(), false);
         
+        // Mark colors used by adjacent vertices
+        adjacentIds = getAdjacentVertexIds(vertexId);
         for (int adjId : adjacentIds) {
             auto it = vertexColors.find(adjId);
             if (it != vertexColors.end()) {
@@ -194,7 +247,7 @@ void Graph::sfColoring() {
             }
         }
         
-        // Find the first unused color
+        // Find first available color
         int color = 0;
         for (; color < usedColors.size(); color++) {
             if (!usedColors[color]) {
@@ -202,9 +255,106 @@ void Graph::sfColoring() {
             }
         }
         
-        // Assign this color to the current vertex
+        // Assign color
         vertexColors[vertexId] = color;
+        colored[maxSatVertex] = true;
+        remainingVertices--;
+        
+        // Update saturation of adjacent vertices
+        adjacentIds = getAdjacentVertexIds(vertexId);
+        for (int adjId : adjacentIds) {
+            auto it = std::find_if(vertices.begin(), vertices.end(),
+                [adjId](const Vertex& v) { return v.getId() == adjId; });
+            
+            if (it != vertices.end()) {
+                int idx = std::distance(vertices.begin(), it);
+                if (!colored[idx]) {
+                    // If this is a new color for this adjacent vertex, increase its saturation
+                    if (adjacentColors[idx].find(color) == adjacentColors[idx].end()) {
+                        adjacentColors[idx].insert(color);
+                        saturationDegree[idx]++;
+                    }
+                }
+            }
+        }
     }
+    
+    std::cout << "SF algorithm completed. Using " << getNumberOfColors() << " colors." << std::endl;
+}
+
+void Graph::exactColoring() {
+    // Start with minimum possible number of colors (1)
+    int minColors = 1;
+    int maxColors = vertices.size(); // Maximum possible colors needed
+    
+    // Binary search for the minimum number of colors
+    while (minColors < maxColors) {
+        int mid = (minColors + maxColors) / 2;
+        std::vector<int> coloring(vertices.size(), -1);
+        
+        if (exactColoringUtil(coloring, 0, mid)) {
+            maxColors = mid;
+        } else {
+            minColors = mid + 1;
+        }
+    }
+    
+    // Try one final time with the minimum number of colors
+    std::vector<int> finalColoring(vertices.size(), -1);
+    if (exactColoringUtil(finalColoring, 0, minColors)) {
+        applyColoring(finalColoring);
+        std::cout << "Found exact coloring with " << minColors << " colors" << std::endl;
+    } else {
+        std::cout << "Failed to find exact coloring" << std::endl;
+    }
+}
+
+bool Graph::exactColoringUtil(std::vector<int>& coloring, int vertexIndex, int numColors) {
+    // Base case: all vertices are colored
+    if (vertexIndex == vertices.size()) {
+        return true;
+    }
+    
+    // Try all possible colors for the current vertex
+    for (int color = 0; color < numColors; color++) {
+        // Check if it's safe to color the current vertex with this color
+        if (isSafeColor(vertices[vertexIndex].getId(), color, coloring)) {
+            // Assign the color
+            coloring[vertexIndex] = color;
+            
+            // Recursively color the rest of the vertices
+            if (exactColoringUtil(coloring, vertexIndex + 1, numColors)) {
+                return true;
+            }
+            
+            // If coloring doesn't lead to a solution, backtrack
+            coloring[vertexIndex] = -1;
+        }
+    }
+    
+    // If no color can be assigned to this vertex
+    return false;
+}
+
+bool Graph::isSafeColor(int vertexId, int color, const std::vector<int>& coloring) {
+    // Get adjacent vertices
+    std::vector<int> adjacentIds = getAdjacentVertexIds(vertexId);
+    
+    // Check if any adjacent vertex has the same color
+    for (int adjId : adjacentIds) {
+        // Find the index of the adjacent vertex
+        auto it = std::find_if(vertices.begin(), vertices.end(),
+            [adjId](const Vertex& v) { return v.getId() == adjId; });
+        
+        if (it != vertices.end()) {
+            int adjIndex = std::distance(vertices.begin(), it);
+            if (coloring[adjIndex] == color) {
+                return false;
+            }
+        }
+    }
+    
+    return true;
 }
 
 void Graph::applyColoring(const std::vector<int>& coloring) {
@@ -285,79 +435,5 @@ int Graph::getEdgeCount() {
     return edges.size();
 }
 
-void Graph::exactColoring() {
-    // Start with minimum possible number of colors (1)
-    int minColors = 1;
-    int maxColors = vertices.size(); // Maximum possible colors needed
-    
-    // Binary search for the minimum number of colors
-    while (minColors < maxColors) {
-        int mid = (minColors + maxColors) / 2;
-        std::vector<int> coloring(vertices.size(), -1);
-        
-        if (exactColoringUtil(coloring, 0, mid)) {
-            maxColors = mid;
-        } else {
-            minColors = mid + 1;
-        }
-    }
-    
-    // Try one final time with the minimum number of colors
-    std::vector<int> finalColoring(vertices.size(), -1);
-    if (exactColoringUtil(finalColoring, 0, minColors)) {
-        applyColoring(finalColoring);
-        std::cout << "Found exact coloring with " << minColors << " colors" << std::endl;
-    } else {
-        std::cout << "Failed to find exact coloring" << std::endl;
-    }
-}
-
-bool Graph::exactColoringUtil(std::vector<int>& coloring, int vertexIndex, int numColors) {
-    // Base case: all vertices are colored
-    if (vertexIndex == vertices.size()) {
-        return true;
-    }
-    
-    // Try all possible colors for the current vertex
-    for (int color = 0; color < numColors; color++) {
-        // Check if it's safe to color the current vertex with this color
-        if (isSafeColor(vertices[vertexIndex].getId(), color, coloring)) {
-            // Assign the color
-            coloring[vertexIndex] = color;
-            
-            // Recursively color the rest of the vertices
-            if (exactColoringUtil(coloring, vertexIndex + 1, numColors)) {
-                return true;
-            }
-            
-            // If coloring doesn't lead to a solution, backtrack
-            coloring[vertexIndex] = -1;
-        }
-    }
-    
-    // If no color can be assigned to this vertex
-    return false;
-}
-
-bool Graph::isSafeColor(int vertexId, int color, const std::vector<int>& coloring) {
-    // Get adjacent vertices
-    std::vector<int> adjacentIds = getAdjacentVertexIds(vertexId);
-    
-    // Check if any adjacent vertex has the same color
-    for (int adjId : adjacentIds) {
-        // Find the index of the adjacent vertex
-        auto it = std::find_if(vertices.begin(), vertices.end(),
-            [adjId](const Vertex& v) { return v.getId() == adjId; });
-        
-        if (it != vertices.end()) {
-            int adjIndex = std::distance(vertices.begin(), it);
-            if (coloring[adjIndex] == color) {
-                return false;
-            }
-        }
-    }
-    
-    return true;
-}
-
-} // namespace graph_coloring
+} // namespace graph_coloring 
+} // namespace graph_coloring 

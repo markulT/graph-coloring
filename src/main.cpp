@@ -3,6 +3,8 @@
 #include <thread>
 #include <random>
 #include <ctime>
+#include <memory>
+#include <string>
 #include "../include/graph/graph.hpp"
 #include "../include/canvas/canvas.hpp"
 
@@ -202,17 +204,58 @@ Graph getRandomGraph() {
     }
 }
 
-int main() {
+void printUsage() {
+    std::cout << "Usage: GraphColoring [options]" << std::endl;
+    std::cout << "Options:" << std::endl;
+    std::cout << "  --algorithm=<alg>    Coloring algorithm: 'greedy', 'sf', or 'exact' (default: greedy)" << std::endl;
+    std::cout << "  --help               Show this help message" << std::endl;
+}
+
+int main(int argc, char** argv) {
     std::cout << "Graph Coloring Demonstration" << std::endl;
+    
+    // Parse command line arguments
+    ColoringAlgorithm algorithm = ColoringAlgorithm::Greedy;
+    
+    for (int i = 1; i < argc; i++) {
+        std::string arg = argv[i];
+        
+        if (arg == "--help") {
+            printUsage();
+            return 0;
+        } else if (arg.find("--algorithm=") == 0) {
+            std::string value = arg.substr(12);
+            if (value == "sf") {
+                algorithm = ColoringAlgorithm::SF;
+            } else if (value == "greedy") {
+                algorithm = ColoringAlgorithm::Greedy;
+            } else if (value == "exact") {
+                algorithm = ColoringAlgorithm::Exact;
+            } else {
+                std::cerr << "Invalid algorithm: " << value << std::endl;
+                printUsage();
+                return 1;
+            }
+        } else {
+            std::cerr << "Unknown option: " << arg << std::endl;
+            printUsage();
+            return 1;
+        }
+    }
     
     // Create a random sample graph
     Graph graph = getRandomGraph();
     
     // Apply graph coloring algorithm
-    graph.colorGraph();
+    auto startTime = std::chrono::high_resolution_clock::now();
+    graph.colorGraph(algorithm);
+    auto endTime = std::chrono::high_resolution_clock::now();
+    
+    // Calculate and print execution time
+    std::chrono::duration<double, std::milli> duration = endTime - startTime;
+    std::cout << "Coloring completed in " << duration.count() << " ms" << std::endl;
     
     // Print results
-    std::cout << "Graph coloring completed." << std::endl;
     std::cout << "Number of colors used: " << graph.getNumberOfColors() << std::endl;
     std::cout << "Vertex colors:" << std::endl;
     
@@ -224,13 +267,15 @@ int main() {
     std::cout << "Is coloring valid? " << (graph.isValidColoring() ? "Yes" : "No") << std::endl;
     
     // Initialize rendering
-    Canvas canvas(800, 600, "Graph Coloring Visualization");
+    const int windowWidth = 800;
+    const int windowHeight = 600;
+    Canvas canvas(windowWidth, windowHeight, "Graph Coloring Visualization");
     if (!canvas.initialize()) {
         std::cerr << "Failed to initialize GLFW window" << std::endl;
         return -1;
     }
     
-    // Set the graph to render
+    // Set the graph for rendering
     canvas.setGraph(&graph);
     
     // Main loop

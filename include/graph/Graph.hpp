@@ -2,17 +2,34 @@
 
 #include <vector>
 #include <unordered_map>
+#include <random>
 #include "../vertex/vertex.hpp"
 #include "../edge/edge.hpp"
 
 namespace graph_coloring {
+
+enum class ColoringAlgorithm {
+    Greedy,
+    SF,
+    Exact
+};
 
 class Graph {
 private:
     std::vector<Vertex> vertices;
     std::vector<Edge> edges;
     std::unordered_map<int, int> vertexColors; // Maps vertex ID to color
-
+    
+    // Coloring algorithm implementations
+    void greedyColoring();
+    void sfColoring();
+    
+    // Exact coloring algorithm methods
+    void exactColoring();
+    bool exactColoringUtil(std::vector<int>& coloring, int vertexIndex, int numColors);
+    bool isSafeColor(int vertexId, int color, const std::vector<int>& coloring);
+    void applyColoring(const std::vector<int>& coloring);
+    
 public:
     Graph();
     ~Graph();
@@ -31,11 +48,11 @@ public:
     std::vector<int> getAdjacentVertexIds(int vertexId);
 
     // Coloring operations
-    void colorGraph();                  // Main coloring algorithm
-    bool isValidColoring();             // Check if current coloring is valid
-    int getVertexColor(int vertexId);   // Get the color of a specific vertex
+    void colorGraph(ColoringAlgorithm algorithm = ColoringAlgorithm::Greedy);
+    bool isValidColoring();
+    int getVertexColor(int vertexId);
     void setVertexColor(int vertexId, int color);
-    int getNumberOfColors();            // Get total number of colors used
+    int getNumberOfColors();
 
     // Utility methods
     void clear();
